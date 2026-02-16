@@ -207,9 +207,12 @@ impl Qbit {
             last_known_id: Option<i64>,
         }
 
-        self.get_with("log/peers", &Arg {
-            last_known_id: last_known_id.into(),
-        })
+        self.get_with(
+            "log/peers",
+            &Arg {
+                last_known_id: last_known_id.into(),
+            },
+        )
         .await?
         .json()
         .await
@@ -241,10 +244,13 @@ impl Qbit {
             rid: Option<i64>,
         }
 
-        self.get_with("sync/torrentPeers", &Arg {
-            hash: hash.as_ref(),
-            rid: rid.into(),
-        })
+        self.get_with(
+            "sync/torrentPeers",
+            &Arg {
+                hash: hash.as_ref(),
+                rid: rid.into(),
+            },
+        )
         .await
         .and_then(|r| r.map_status(TORRENT_NOT_FOUND))?
         .json()
@@ -409,10 +415,13 @@ impl Qbit {
             indexes: Option<String>,
         }
 
-        self.get_with("torrents/files", &Arg {
-            hash: hash.as_ref(),
-            indexes: indexes.into().map(|s| s.to_string()),
-        })
+        self.get_with(
+            "torrents/files",
+            &Arg {
+                hash: hash.as_ref(),
+                indexes: indexes.into().map(|s| s.to_string()),
+            },
+        )
         .await
         .and_then(|r| r.map_status(TORRENT_NOT_FOUND))?
         .json()
@@ -444,14 +453,14 @@ impl Qbit {
             .map_err(Into::into)
     }
 
-    pub async fn pause_torrents(&self, hashes: impl Into<Hashes> + Send + Sync) -> Result<()> {
-        self.post("torrents/pause", Some(&HashesArg::new(hashes)))
+    pub async fn stop_torrents(&self, hashes: impl Into<Hashes> + Send + Sync) -> Result<()> {
+        self.post("torrents/stop", Some(&HashesArg::new(hashes)))
             .await?
             .end()
     }
 
-    pub async fn resume_torrents(&self, hashes: impl Into<Hashes> + Send + Sync) -> Result<()> {
-        self.post("torrents/resume", Some(&HashesArg::new(hashes)))
+    pub async fn start_torrents(&self, hashes: impl Into<Hashes> + Send + Sync) -> Result<()> {
+        self.post("torrents/start", Some(&HashesArg::new(hashes)))
             .await?
             .end()
     }
@@ -594,6 +603,7 @@ impl Qbit {
         new_url: Url,
     ) -> Result<()> {
         #[derive(Serialize)]
+        #[serde(rename_all = "camelCase")]
         struct EditTrackerArg<'a> {
             hash: &'a str,
             orig_url: Url,
@@ -614,9 +624,7 @@ impl Qbit {
             StatusCode::CONFLICT => Some(Error::ApiError(ApiError::ConflictTrackerUrl)),
             _ => None,
         })?
-        .json()
-        .await
-        .map_err(Into::into)
+        .end()
     }
 
     pub async fn remove_trackers(
